@@ -48,8 +48,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
 from math import sqrt, exp, pi
-from scipy.special import erf, i0
-import scipy.integrate as integrate
+from scipy.special import erf
+# from scipy.special import i0
+# import scipy.integrate as integrate
 
 # 
 # ... The diffusion-based wake model
@@ -76,6 +77,8 @@ def diffusion_model(yds, ct, ti, xd, lnw):
     NOTE:
         All numbered equations below follow the numbering in (Ali et al. 2024).
     '''
+
+    sqrt2 = sqrt(2)
     
     # Rate of wake expansion "ks" & the parameter "eps" are
     # calculated following:
@@ -133,11 +136,20 @@ def diffusion_model(yds, ct, ti, xd, lnw):
     # Following equation 2.11
     c = (1 - sqrt(1 - lam * ct/Rd**2)) / lam
 
+    # Normalized deficit based om the solution in terms of thr error function. 
+    W = []
+    for r_ in yds:
+        r = r_ * 2 # Normalise by turbine's radius
+        gamma = 2*sigma**2 * (1 + 1/(r + 1e-8) + 1/(16 * r**2 + 1e-8)) # The small constant is to avoid division by zero at r = 0
+        mu = (sqrt(pi)/2.0)**erf(gamma)
+        K = (erf((mu+r)/(sqrt2*sigma)) + erf((mu-r)/(sqrt2*sigma))) / erf(mu/(sqrt2*sigma))
+        W.append(c/2 * (1-exp(-Rd**2/(2*sigma**2))) * K)
+    
     # A list of normalised deficits for each lateral distance in "yds"
     # Equation 2.2
-    W = [c/sigma**(2)*exp(-0.5*(2*yd)**2/sigma**2)*\
-        integrate.quad(lambda x: (x*exp(-0.5*x**2/sigma**2)\
-            *i0(x*(2*yd)/sigma**2)), 0, Rd)[0] for yd in yds]
+    # W = [c/sigma**(2)*exp(-0.5*(2*yd)**2/sigma**2)*\
+    #     integrate.quad(lambda x: (x*exp(-0.5*x**2/sigma**2)\
+    #         *i0(x*(2*yd)/sigma**2)), 0, Rd)[0] for yd in yds]
     
     # Return the list of normalised deficits
     return W
@@ -182,7 +194,11 @@ def calc_lam(sigma,Rd):
     doi:10.1017/jfm.2024.1077    
 
     '''
-    return 2*(erf(Rd/sigma)-sigma/(Rd*sqrt(pi))*(1-exp(-Rd**2/sigma**2)))**2
+    #return 2*(erf(Rd/sigma)-sigma/(Rd*sqrt(pi))*(1-exp(-Rd**2/sigma**2)))**2
+
+    # Include the error function correction
+    mus = (sqrt(pi)/2.0)**erf(2*sigma**2)
+    return 2*(erf(mus*Rd/sigma)-sigma/(mus*Rd*sqrt(pi))*(1-exp(-mus**2 * Rd**2/sigma**2)))**2
 
 # 
 # ... An example application of the diffusion-based wake model
@@ -376,3 +392,5 @@ def to_letter(i):
     return ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
         "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", 
         "w","x", "y", "z"][i]
+
+example()
