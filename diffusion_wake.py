@@ -140,7 +140,7 @@ def diffusion_model(yds, ct, ti, xd, lnw):
     W = []
     for r_ in yds:
         r = r_ * 2 # Normalise by turbine's radius
-        gamma = 2*sigma**2 * (1 + 1/(r + 1e-8) + 1/(16 * r**2 + 1e-8)) # The small constant is to avoid division by zero at r = 0
+        gamma = 2*sigma**2 * (1 + 1/(r + 1e-8) - 1/(16 * r**2 + 1e-8)) # The small constant is to avoid division by zero at r = 0
         mu = (sqrt(pi)/2.0)**erf(gamma)
         K = (erf((mu+r)/(sqrt2*sigma)) + erf((mu-r)/(sqrt2*sigma))) / erf(mu/(sqrt2*sigma))
         W.append(c/2 * (1-exp(-Rd**2/(2*sigma**2))) * K)
